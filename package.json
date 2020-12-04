@@ -4,7 +4,7 @@
   "description": "Library Management System Task from >> SoftX Innovation Limited",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "node app.js"
   },
   "keywords": [
     "abu",
