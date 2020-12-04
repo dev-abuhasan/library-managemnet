@@ -21,7 +21,6 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(fileUpload());
 app.use(express.static('./Public/UploadImg'));
-app.use(express.static(path.join(__dirname, '/Public/Client/build')));
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -41,6 +40,20 @@ client.connect(err => {
   const librarian = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_LIBRARIAN}`);
   //Book collection
   const Book = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_BOOK}`);
+
+  //post check admin or not
+  app.post('/check-admin', (req, res) => {
+    const email = req.body.email;
+    librarian.find({ email: email })
+      .toArray((err, doc) => {
+        if (doc.length === 0) {
+          res.send({ admin: false });
+        } else {
+          res.send({ admin: true });
+        }
+      })
+  });
+
   //Swagger Get 
   /**
      * @swagger
@@ -100,6 +113,7 @@ client.connect(err => {
     const author = req.body.author;
     const genre = req.body.genre;
     const releaseDate = req.body.releaseDate;
+    const statusOption = req.body.statusOption;
     const image = req.files.bookImage;
     const ImgPath = `${__dirname}/Public/UploadImg/${image.name}`;
     image.mv(ImgPath, err => {
@@ -116,7 +130,7 @@ client.connect(err => {
         size: image.size,
         img: Buffer.from(enCoImg, 'base64')
       };
-      Book.insertOne({ bookName, author, genre, releaseDate, createImg })
+      Book.insertOne({ bookName, author, genre, releaseDate, statusOption, createImg })
         .then(result => {
           fs.remove(ImgPath, errors => {
             if (errors) {
@@ -137,50 +151,150 @@ client.connect(err => {
     })
   });
 
-  //Swagger update
+  //delete swagger
   /**
-     * @swagger
-     * /update-single-book/{id}:
-     *  put:
-     *   summary: update employee
-     *   description: update employee
-     *   consumes:
-     *    - application/json
-     *   produces:
-     *    - application/json
-     *   parameters:
-     *    - in: path
-     *      name: id
-     *      schema:
-     *       type: integer
-     *      required: true
-     *      description: id of the employee
-     *      example: 2
-     *    - in: body
-     *      name: body
-     *      required: true
-     *      description: body object
-     *   requestBody:
-     *    content:
-     *     application/json:
-     *   responses:
-     *    200:
-     *     description: success
-     *     content:
-     *      application/json:
-     */
-  app.put("/update-single-book/:id", async (req, res) => {
-    Book.find({ _id: ObjectId(req.params.id) })
-      .toArray((err, docs) => {
-        res.send(docs)
+   * @swagger
+   * /delete-book/{id}:
+   *  delete:
+   *   summary: delete book
+   *   description: delete book
+   *   parameters:
+   *    - in: path
+   *      name: id
+   *      schema:
+   *       type: string
+   *      required: true
+   *      description: id of the delete book
+   *   responses:
+   *    200:
+   *     description: success
+   */
+  app.delete('/delete-book/:id', (req, res) => {
+    Book.deleteOne({ _id: ObjectId(req.params.id) })
+      .then(result => {
+        res.status(200).send({
+          success: true,
+          msg: 'Status update successful'
+        });
       })
-
   })
 
+  //Swagger update
+  /**
+   * @swagger
+   * /update-single-book/{id}:
+   *  patch:
+   *   summary: update book
+   *   description: update book
+   *   parameters:
+   *    - in: path
+   *      name: id
+   *      schema:
+   *       type: string
+   *      required: true
+   *      description: id of the update book
+   *    - name: bookName
+   *      description: bookName
+   *      in: formData
+   *      required: true
+   *      type: string
+   *    - name: author
+   *      description: author
+   *      in: formData
+   *      required: true
+   *      type: string
+   *    - name: genre
+   *      description: genre
+   *      in: formData
+   *      required: true
+   *      type: string
+   *    - name: releaseDate
+   *      description: releaseDate
+   *      in: formData
+   *      required: true
+   *      type: string
+   *   responses:
+   *    200:
+   *     description: success
+   */
+  app.patch("/update-single-book/:id", async (req, res) => {
+    Book.updateOne({ _id: ObjectId(req.params.id) },
+      {
+        $set: {
+          bookName: req.body.bookName,
+          author: req.body.author,
+          genre: req.body.genre,
+          releaseDate: req.body.releaseDate,
+        }
+      })
+      .then(result => {
+        res.status(200).send({
+          success: true,
+          msg: 'Status update successful'
+        });
+      })
+  });
+
+  //update status
+  app.patch('/update-statue/:id', (req, res) => {
+    Book.updateOne({ _id: ObjectId(req.params.id) },
+      {
+        $set: {
+          statusOption: req.body.statusOption
+        }
+      })
+      .then(result => {
+        res.status(200).send({
+          success: result.insertedCount > 0,
+          msg: 'Status update successful'
+        });
+      })
+  });
+  //delete
+  app.delete('/delete-order/:id', (req, res) => {
+    Book.deleteOne({ _id: ObjectId(req.params.id) })
+      .then(result => {
+        res.status(200).send({
+          success: result.insertedCount > 0,
+          msg: 'Status update successful'
+        });
+      })
+  })
+
+
+  //get all order data to admin
+  app.get('/all-order-data/admin', (req, res) => {
+    const email = req.query.email;
+    librarian.find({ email: email })
+      .toArray((err, doc) => {
+        if (doc.length === 0) {
+          res.status(500).send({
+            success: false,
+            msg: 'Please Login in as a Admin'
+          });
+        } else {
+          Book.find({})
+            .toArray((err, docs) => {
+              res.send(docs);
+            })
+        }
+      })
+  });
+  app.get("/get-active-book", (req, res) => {
+    const filterObject = {};
+    req.query.statusOption && (filterObject.statusOption = req.query.statusOption);
+    Book.find(filterObject).toArray((err, docs) => {
+      if (docs.length) {
+        res.status(200).send(docs);
+      } else {
+        res.sendStatus(404);
+      }
+    });
+  });
 });
 
 //default dir & client
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Public/Client/build/index.html'));
+  res.send('Abu Hasan');
 })
 app.listen(process.env.PORT || 5000);
