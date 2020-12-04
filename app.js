@@ -40,6 +40,8 @@ client.connect(err => {
   const librarian = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_LIBRARIAN}`);
   //Book collection
   const Book = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_BOOK}`);
+  //Book Req
+  const BookReq = client.db(`${process.env.DB_NAME}`).collection(`${process.env.DB_BOOK_REQ}`);
 
   //post check admin or not
   app.post('/check-admin', (req, res) => {
@@ -289,8 +291,35 @@ client.connect(err => {
       } else {
         res.sendStatus(404);
       }
-    });
+    })
   });
+
+  //add book req
+  app.post("/add-request", async (req, res) => {
+    const name = req.body.name;
+    const email = req.body.email;
+    const bookName = req.body.bookName;
+    const dataStart = req.body.dataStart;
+    const dataEnd = req.body.dataEnd;
+    const phoneNumber = req.body.phoneNumber;
+    const option = req.body.option;
+    BookReq.insertOne({ name, email, bookName, dataStart, dataEnd, phoneNumber, option })
+      .then(result => {
+        res.status(200).send({
+          success: result.insertedCount > 0,
+          msg: 'Success to upload Data'
+        })
+      })
+  });
+
+  //get userSpecific service list
+  app.get('/user-book-list', (req, res) => {
+    BookReq.find({ email: req.query.email })
+      .toArray((err, docs) => {
+        res.send(docs);
+      })
+  })
+
 });
 
 //default dir & client
