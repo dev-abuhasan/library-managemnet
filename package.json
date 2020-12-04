@@ -1,0 +1,34 @@
+{
+  "name": "library-management-system",
+  "version": "1.0.0",
+  "description": "Library Management System Task from >> SoftX Innovation Limited",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js"
+  },
+  "keywords": [
+    "abu",
+    "hasan",
+    "Library",
+    "Management",
+    "System",
+    "new Learning",
+    "swagger"
+  ],
+  "author": "Abu Hasan",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.0",
+    "fs-extra": "^9.0.1",
+    "mongodb": "^3.6.3",
+    "swagger-jsdoc": "^4.0.0",
+    "swagger-ui-express": "^4.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}

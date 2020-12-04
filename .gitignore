@@ -1,0 +1,4 @@
+/node_modules
+.env
+/configs
+/Public/Client/node_modules
